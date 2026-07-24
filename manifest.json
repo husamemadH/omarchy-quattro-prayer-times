@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "local.prayer-times",
+  "name": "Prayer times",
+  "version": "1.0.0",
+  "author": "Local",
+  "description": "Mosque icon with next prayer countdown and a popup with today's five prayers",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Prayer times",
+    "description": "Mosque icon, next prayer countdown, popup with today's five prayers",
+    "category": "Info",
+    "allowMultiple": false
+  }
+}
