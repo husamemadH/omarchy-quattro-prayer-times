@@ -7,6 +7,8 @@ listing today's five prayer times.
 Matches the look of the built-in wifi/sound/keyboard-layout icons — icon
 only in the bar, no inline text.
 
+![Popup opened after left-clicking the bar icon](screenshot.png)
+
 ## How it works
 
 - `prayer-fetch.sh` resolves your location the same way the built-in weather
