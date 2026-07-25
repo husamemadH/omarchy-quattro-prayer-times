@@ -23,7 +23,9 @@ only in the bar, no inline text.
   location name in the popup swaps it for a search field (with Open-Meteo
   suggestions) to manually set a location, same as the built-in weather
   widget — and since both share `weather.json`, changing it here moves the
-  weather widget's location too.
+  weather widget's location too. Useful if IP-based geolocation isn't
+  enabled/accurate (e.g. behind a VPN) — just click the city name and type
+  the correct one.
 
 ## Install
 
