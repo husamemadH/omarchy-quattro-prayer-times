@@ -4,7 +4,7 @@ An [Omarchy](https://omarchy.org/) shell bar widget: a mosque icon that shows
 the next prayer and a live countdown on hover, with a click-to-open popup
 listing today's five prayer times.
 
-Matches the look of the built-in wifi/sound/keyboard-layout icons — icon
+Matches the look of the built-in wifi/sound icons
 only in the bar, no inline text.
 
 ![Popup opened after left-clicking the bar icon](screenshot.png)
