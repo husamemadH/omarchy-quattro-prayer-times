@@ -64,6 +64,43 @@ function countdownLabel(next, now) {
   return next.name + " " + timeRemaining(next, now)
 }
 
+// Open-Meteo geocoding response -> suggestion rows for the location search.
+function parseGeocodingResults(raw) {
+  try {
+    var data = JSON.parse(String(raw || "{}"))
+    var results = data.results
+    if (!results || !results.length) return []
+
+    var out = []
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i]
+      if (!r || !r.name || r.latitude === undefined || r.longitude === undefined) continue
+      var region = [r.admin1, r.country].filter(function(part) { return !!part }).join(", ")
+      out.push({
+        name: String(r.name),
+        description: region,
+        latitude: r.latitude,
+        longitude: r.longitude
+      })
+    }
+    return out
+  } catch (e) {
+    return []
+  }
+}
+
+function locationCommit(text, suggestions, selectedIndex) {
+  var name = String(text || "").replace(/^\s+|\s+$/g, "")
+  if (name === "") return { name: "", latitude: null, longitude: null }
+
+  var choices = suggestions || []
+  var index = Math.max(0, Math.min(parseInt(selectedIndex, 10) || 0, choices.length - 1))
+  var suggestion = choices[index]
+  if (suggestion) return suggestion
+
+  return { name: name, latitude: null, longitude: null }
+}
+
 if (typeof module !== "undefined") {
   module.exports = {
     PRAYER_ORDER: PRAYER_ORDER,
@@ -73,6 +110,8 @@ if (typeof module !== "undefined") {
     nextPrayer: nextPrayer,
     formatTime12: formatTime12,
     timeRemaining: timeRemaining,
-    countdownLabel: countdownLabel
+    countdownLabel: countdownLabel,
+    parseGeocodingResults: parseGeocodingResults,
+    locationCommit: locationCommit
   }
 }
