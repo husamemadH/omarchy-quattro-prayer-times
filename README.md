@@ -17,14 +17,16 @@ only in the bar, no inline text.
   `~/.local/state/omarchy/settings/prayer-times.json` and refreshed once a
   day (or on right/middle click).
 - `BarWidget.qml` renders the bar icon (Font Awesome `fa-mosque`) and the
-  popup, `Model.js` holds the countdown/formatting logic.
+  popup, `Model.js` holds the countdown/formatting logic. Clicking the
+  location name in the popup swaps it for a search field (with Open-Meteo
+  suggestions) to manually set a location, same as the built-in weather
+  widget — and since both share `weather.json`, changing it here moves the
+  weather widget's location too.
 
 ## Install
 
 ```
-cp -r local.prayer-times ~/.config/omarchy/plugins/
-omarchy plugin rescan
-omarchy plugin enable local.prayer-times
+omarchy plugin add https://github.com/husamemadH/omarchy-prayer-times.git --enable
 omarchy bar plugin add local.prayer-times --section right
 ```
 
