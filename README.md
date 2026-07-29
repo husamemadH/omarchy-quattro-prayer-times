@@ -32,8 +32,13 @@ only in the bar, no inline text.
 
 ```
 omarchy plugin add https://github.com/husamemadH/omarchy-quattro-prayer-times.git --enable
-omarchy bar plugin add local.prayer-times --section right
+omarchy bar plugin add local.prayer-times --section right --index 0
 ```
+
+`--index 0` puts the icon at the left edge of the right section. Without it the
+widget is placed after the section's anchor (`omarchy.tray`), and if you don't
+run a tray widget it lands at the far end of the bar instead. Move it later with
+`omarchy bar plugin move local.prayer-times --section right --index <n>`.
 
 ## Uninstall
 
@@ -55,3 +60,7 @@ Calculation method defaults to Muslim World League (Aladhan method `3`).
 Change it by editing `METHOD` in `prayer-fetch.sh`, or override per-run with
 `PRAYER_METHOD=<id>`. See the
 [Aladhan docs](https://aladhan.com/calculation-methods) for method IDs.
+
+## License
+
+[MIT](LICENSE)
