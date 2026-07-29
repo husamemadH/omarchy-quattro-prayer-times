@@ -3,7 +3,7 @@
   "id": "local.prayer-times",
   "name": "Prayer times",
   "version": "1.0.0",
-  "author": "Local",
+  "author": "husamemad",
   "description": "Mosque icon with next prayer countdown and a popup with today's five prayers",
   "kinds": [
     "bar-widget"
