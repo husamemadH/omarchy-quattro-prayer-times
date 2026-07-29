@@ -8,7 +8,7 @@ waybar version can be found [here](https://github.com/husamemadH/waybar-prayer-t
 Matches the look of the built-in wifi/sound icons
 only in the bar, no inline text.
 
-![Popup opened after left-clicking the bar icon](screenshot.png)
+![Popup opened after left-clicking the bar icon](preview.png)
 
 ## How it works
 
