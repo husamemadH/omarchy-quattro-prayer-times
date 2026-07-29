@@ -31,9 +31,23 @@ only in the bar, no inline text.
 ## Install
 
 ```
-omarchy plugin add https://github.com/husamemadH/omarchy-prayer-times.git --enable
+omarchy plugin add https://github.com/husamemadH/omarchy-quattro-prayer-times.git --enable
 omarchy bar plugin add local.prayer-times --section right
 ```
+
+## Uninstall
+
+```
+omarchy bar plugin remove local.prayer-times
+omarchy plugin remove local.prayer-times
+```
+
+Take the widget out of the bar layout first — `omarchy plugin remove` disables
+and deletes the plugin, but leaves its entry in the layout behind.
+
+The cached times in `~/.local/state/omarchy/settings/prayer-times.json` are left
+on disk; delete it if you want them gone. Leave `weather.json` alone — that one
+belongs to the built-in weather widget.
 
 ## Configuration
 
