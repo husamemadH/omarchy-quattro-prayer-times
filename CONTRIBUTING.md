@@ -1,0 +1,1 @@
+Issues and PRs are welcome, Including half-formed ones. If something's broken, looks off, or you're just not sure whether it's a bug, open an issue anyway. Worst case I close it with an explanation, no harm done.
