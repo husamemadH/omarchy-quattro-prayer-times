@@ -15,31 +15,6 @@ only in the bar, no inline text.
 <img width="286" height="59" alt="image" src="https://github.com/user-attachments/assets/8dd5317f-e25a-494a-9891-608e6e72b04c" />
 
 
-## How it works
-
-- `prayer-fetch.sh` resolves your location the same way the built-in weather
-  widget does: reuses `~/.local/state/omarchy/settings/weather.json` if set,
-  otherwise IP auto-detects via `omarchy-weather-location`, then geocodes to
-  coordinates with Open-Meteo. Prayer times come from the free
-  [Aladhan API](https://aladhan.com/prayer-times-api), cached to
-  `~/.local/state/omarchy/settings/prayer-times.json` and refreshed once a
-  day (or on right/middle click).
-- `BarWidget.qml` renders the bar icon (Font Awesome `fa-mosque`) and the
-  popup, `Model.js` holds the countdown/formatting logic. Clicking the
-  location name in the popup swaps it for a search field (with Open-Meteo
-  suggestions) to manually set a location, same as the built-in weather
-  widget — and since both share `weather.json`, changing it here moves the
-  weather widget's location too. Useful if IP-based geolocation isn't
-  enabled/accurate (e.g. behind a VPN) — just click the city name and type
-  the correct one.
-- When a prayer time arrives, the widget fires a desktop notification
-  ("It's time for Asr") that dismisses itself after 5 seconds. It polls every
-  10 seconds and notifies each prayer at most once per day, and it won't
-  replay a prayer that already passed before the shell started. The **Alerts**
-  toggle at the bottom of the popup turns them off; the preference is stored
-  in `~/.local/state/omarchy/settings/prayer-alerts.json` (separate from the
-  cached times, which `prayer-fetch.sh` rewrites wholesale).
-
 ## Install
 
 ```
@@ -65,6 +40,36 @@ and deletes the plugin, but leaves its entry in the layout behind.
 The cached times in `~/.local/state/omarchy/settings/prayer-times.json` are left
 on disk; delete it if you want them gone. Leave `weather.json` alone — that one
 belongs to the built-in weather widget.
+
+**Reinstalling to get an update?** Run `omarchy restart shell` afterwards.
+`rescanPlugins` only refreshes the plugin registry, not an already-loaded
+widget's code, so a long-lived shell session keeps running the old version
+until it restarts.
+
+## How it works
+
+- `prayer-fetch.sh` resolves your location the same way the built-in weather
+  widget does: reuses `~/.local/state/omarchy/settings/weather.json` if set,
+  otherwise IP auto-detects via `omarchy-weather-location`, then geocodes to
+  coordinates with Open-Meteo. Prayer times come from the free
+  [Aladhan API](https://aladhan.com/prayer-times-api), cached to
+  `~/.local/state/omarchy/settings/prayer-times.json` and refreshed once a
+  day (or on right/middle click).
+- `BarWidget.qml` renders the bar icon (Font Awesome `fa-mosque`) and the
+  popup, `Model.js` holds the countdown/formatting logic. Clicking the
+  location name in the popup swaps it for a search field (with Open-Meteo
+  suggestions) to manually set a location, same as the built-in weather
+  widget — and since both share `weather.json`, changing it here moves the
+  weather widget's location too. Useful if IP-based geolocation isn't
+  enabled/accurate (e.g. behind a VPN) — just click the city name and type
+  the correct one.
+- When a prayer time arrives, the widget fires a desktop notification
+  ("It's time for Asr") that dismisses itself after 5 seconds. It polls every
+  10 seconds and notifies each prayer at most once per day, and it won't
+  replay a prayer that already passed before the shell started. The **Alerts**
+  toggle at the bottom of the popup turns them off; the preference is stored
+  in `~/.local/state/omarchy/settings/prayer-alerts.json` (separate from the
+  cached times, which `prayer-fetch.sh` rewrites wholesale).
 
 ## Configuration
 
