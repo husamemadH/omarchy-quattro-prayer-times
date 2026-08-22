@@ -9,6 +9,7 @@ Matches the look of the built-in wifi/sound icons
 only in the bar, no inline text.
 
 <img width="229" height="353" alt="image" src="https://github.com/user-attachments/assets/0cade9d1-1937-40bd-a4b1-6f4d4047abda" />
+<img width="286" height="59" alt="image" src="https://github.com/user-attachments/assets/8dd5317f-e25a-494a-9891-608e6e72b04c" />
 
 
 ## How it works
