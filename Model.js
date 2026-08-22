@@ -35,6 +35,38 @@ function nextPrayer(timings, now) {
   return fajr ? { name: "Fajr", time: timings["Fajr"], date: fajr } : null
 }
 
+// The prayer whose time has just arrived: within `windowMs` before `now`.
+// The arrival notification polls on a coarse timer, so it needs a window
+// rather than an exact match; the caller de-dupes with prayerKey().
+function duePrayer(timings, now, windowMs) {
+  if (!timings) return null
+  for (var i = 0; i < PRAYERS.length; i++) {
+    var name = PRAYERS[i]
+    var t = timeToDate(timings[name], now)
+    if (!t) continue
+    var elapsed = now.getTime() - t.getTime()
+    if (elapsed >= 0 && elapsed < windowMs) return { name: name, time: timings[name], date: t }
+  }
+  return null
+}
+
+// Stable per-day identity for a prayer, so each one notifies at most once.
+function prayerKey(prayer) {
+  if (!prayer || !prayer.date) return ""
+  var d = prayer.date
+  return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate() + " " + prayer.name
+}
+
+// Alerts preference file -> bool. Missing/corrupt file means alerts on, so a
+// first run (or a file we can't read) still notifies.
+function parseAlertsEnabled(raw) {
+  try {
+    var data = JSON.parse(String(raw || "{}"))
+    if (data && typeof data.alerts === "boolean") return data.alerts
+  } catch (e) {}
+  return true
+}
+
 // "HH:MM" (24h, as returned by the API) -> "h:MM AM/PM" for display.
 function formatTime12(hhmm) {
   var parts = String(hhmm || "").split(":")
@@ -108,6 +140,9 @@ if (typeof module !== "undefined") {
     parseCache: parseCache,
     timeToDate: timeToDate,
     nextPrayer: nextPrayer,
+    duePrayer: duePrayer,
+    prayerKey: prayerKey,
+    parseAlertsEnabled: parseAlertsEnabled,
     formatTime12: formatTime12,
     timeRemaining: timeRemaining,
     countdownLabel: countdownLabel,

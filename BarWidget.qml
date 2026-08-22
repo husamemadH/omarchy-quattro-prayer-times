@@ -20,6 +20,19 @@ BarWidget {
   property bool popupOpen: false
   property date nowTick: new Date()
 
+  // Arrival alerts: the key of the last prayer notified (see Model.prayerKey),
+  // and the moment the widget started — prayers whose time already passed
+  // before startup must not fire a stale toast on a shell restart.
+  property string lastNotifiedKey: ""
+  readonly property date startedAt: new Date()
+
+  // Alerts on/off, persisted next to the cached times in its own file —
+  // prayer-times.json is rewritten wholesale by prayer-fetch.sh, so a
+  // preference stored in there would be lost on the next refresh.
+  readonly property string settingsPath: Quickshell.env("HOME") + "/.local/state/omarchy/settings/prayer-alerts.json"
+  property bool alertsEnabled: true
+  property bool settingsLoaded: false
+
   // Click-to-edit location, same mechanism as the weather widget: persists
   // to the shared weather.json via omarchy-weather-location, so editing the
   // location here also moves the weather widget's location.
@@ -110,6 +123,44 @@ BarWidget {
     geocodeProc.running = true
   }
 
+  function loadSettings(raw) {
+    if (root.settingsLoaded) return
+    root.alertsEnabled = Model.parseAlertsEnabled(raw)
+    root.settingsLoaded = true
+  }
+
+  function setAlertsEnabled(enabled) {
+    root.alertsEnabled = enabled
+    // The file loads asynchronously; marking it loaded here keeps a toggle
+    // made in that first moment from being overwritten by the load that
+    // lands after it.
+    root.settingsLoaded = true
+    settingsFile.setText(JSON.stringify({ version: 1, alerts: enabled }, null, 2) + "\n")
+  }
+
+  // The shell's notification service never auto-dismisses urgency=critical
+  // toasts and floors normal ones at 8s; only urgency=low honours a shorter
+  // expiry, with a 5s floor. So `-u low -t 5000` is exactly the 5-second
+  // toast we want — anything louder sticks until it's clicked away.
+  function notifyPrayer(prayer) {
+    if (!prayer) return
+    notifyProc.running = false
+    notifyProc.command = ["notify-send", "-a", "Prayer times", "-u", "low", "-t", "5000",
+      prayer.name, "It's time for " + prayer.name + " · " + Model.formatTime12(prayer.time)]
+    notifyProc.running = true
+  }
+
+  function checkPrayerArrived() {
+    if (!root.alertsEnabled) return
+    var now = new Date()
+    var due = Model.duePrayer(root.timings, now, root.arrivalWindowMs)
+    if (!due || due.date.getTime() < root.startedAt.getTime()) return
+    var key = Model.prayerKey(due)
+    if (key === root.lastNotifiedKey) return
+    root.lastNotifiedKey = key
+    root.notifyPrayer(due)
+  }
+
   function applyData(data) {
     if (!data || data.error) {
       root.lastError = (data && data.error) || "unknown error"
@@ -132,6 +183,18 @@ BarWidget {
     onFileChanged: reload()
   }
 
+  FileView {
+    id: settingsFile
+    path: root.settingsPath
+    watchChanges: false
+    atomicWrites: true
+    printErrors: false
+    onLoaded: root.loadSettings(text())
+    // First run: no file yet. Without this the preference would never load
+    // and the first toggle would be dropped as "not loaded".
+    onLoadFailed: root.loadSettings("")
+  }
+
   Process {
     id: fetchProc
     command: ["bash", root.scriptPath]
@@ -139,6 +202,20 @@ BarWidget {
       waitForEnd: true
       onStreamFinished: root.applyData(Model.parseCache(text))
     }
+  }
+
+  Process { id: notifyProc }
+
+  // Polls for a prayer whose time just landed. The window is wider than the
+  // interval so a missed tick (suspend, clock jump) still alerts; the
+  // lastNotifiedKey guard keeps it to one toast per prayer.
+  readonly property int arrivalWindowMs: 60000
+  Timer {
+    interval: 10000
+    running: true
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: root.checkPrayerArrived()
   }
 
   Process {
@@ -412,8 +489,19 @@ BarWidget {
           opacity: 0.12
         }
 
+        Toggle {
+          width: parent.width
+          label: "Alerts"
+          description: root.alertsEnabled ? "5s toast" : "Off"
+          checked: root.alertsEnabled
+          foreground: root.bar.foreground
+          fontFamily: root.bar.fontFamily
+          titleSize: Style.font.bodySmall
+          onClicked: root.setAlertsEnabled(!root.alertsEnabled)
+        }
+
         Text {
-          text: "Left-click: toggle · Right/middle-click: refresh"
+          text: "Right/middle-click the icon to refresh"
           color: Qt.darker(root.bar.foreground, 1.6)
           font.family: root.bar.fontFamily
           font.pixelSize: Style.font.caption

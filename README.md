@@ -27,6 +27,13 @@ only in the bar, no inline text.
   weather widget's location too. Useful if IP-based geolocation isn't
   enabled/accurate (e.g. behind a VPN) — just click the city name and type
   the correct one.
+- When a prayer time arrives, the widget fires a desktop notification
+  ("It's time for Asr") that dismisses itself after 5 seconds. It polls every
+  10 seconds and notifies each prayer at most once per day, and it won't
+  replay a prayer that already passed before the shell started. The **Alerts**
+  toggle at the bottom of the popup turns them off; the preference is stored
+  in `~/.local/state/omarchy/settings/prayer-alerts.json` (separate from the
+  cached times, which `prayer-fetch.sh` rewrites wholesale).
 
 ## Install
 
@@ -60,6 +67,14 @@ Calculation method defaults to Muslim World League (Aladhan method `3`).
 Change it by editing `METHOD` in `prayer-fetch.sh`, or override per-run with
 `PRAYER_METHOD=<id>`. See the
 [Aladhan docs](https://aladhan.com/calculation-methods) for method IDs.
+
+The arrival notification is sent as `notify-send -u low -t 5000` on purpose.
+The Omarchy shell's notification service never auto-dismisses `critical`
+toasts and floors `normal` ones at 8 seconds; only `low` urgency honours a
+shorter expiry, with a 5-second floor. Change the `-t` value in
+`notifyPrayer()` in `BarWidget.qml` to make it longer (up to 30s, the shell's
+cap). To turn alerts off, use the toggle in the popup rather than editing
+the code.
 
 ## License
 
