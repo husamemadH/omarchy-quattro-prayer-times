@@ -57,14 +57,17 @@ function prayerKey(prayer) {
   return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate() + " " + prayer.name
 }
 
-// Alerts preference file -> bool. Missing/corrupt file means alerts on, so a
-// first run (or a file we can't read) still notifies.
-function parseAlertsEnabled(raw) {
+// Alerts preference file -> { alerts, sound }. Anything missing or corrupt
+// reads as enabled, so a first run (or a file we can't parse) still alerts.
+// v1 files carry no `sound` key; they fall through to the default.
+function parseSettings(raw) {
+  var out = { alerts: true, sound: true }
   try {
     var data = JSON.parse(String(raw || "{}"))
-    if (data && typeof data.alerts === "boolean") return data.alerts
+    if (data && typeof data.alerts === "boolean") out.alerts = data.alerts
+    if (data && typeof data.sound === "boolean") out.sound = data.sound
   } catch (e) {}
-  return true
+  return out
 }
 
 // "HH:MM" (24h, as returned by the API) -> "h:MM AM/PM" for display.
@@ -142,7 +145,7 @@ if (typeof module !== "undefined") {
     nextPrayer: nextPrayer,
     duePrayer: duePrayer,
     prayerKey: prayerKey,
-    parseAlertsEnabled: parseAlertsEnabled,
+    parseSettings: parseSettings,
     formatTime12: formatTime12,
     timeRemaining: timeRemaining,
     countdownLabel: countdownLabel,

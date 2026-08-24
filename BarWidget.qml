@@ -30,7 +30,9 @@ BarWidget {
   // prayer-times.json is rewritten wholesale by prayer-fetch.sh, so a
   // preference stored in there would be lost on the next refresh.
   readonly property string settingsPath: Quickshell.env("HOME") + "/.local/state/omarchy/settings/prayer-alerts.json"
+  readonly property string soundPath: "/usr/share/sounds/freedesktop/stereo/bell.oga"
   property bool alertsEnabled: true
+  property bool soundEnabled: true
   property bool settingsLoaded: false
 
   // Click-to-edit location, same mechanism as the weather widget: persists
@@ -125,29 +127,39 @@ BarWidget {
 
   function loadSettings(raw) {
     if (root.settingsLoaded) return
-    root.alertsEnabled = Model.parseAlertsEnabled(raw)
+    var settings = Model.parseSettings(raw)
+    root.alertsEnabled = settings.alerts
+    root.soundEnabled = settings.sound
     root.settingsLoaded = true
   }
 
-  function setAlertsEnabled(enabled) {
-    root.alertsEnabled = enabled
+  function saveSettings() {
     // The file loads asynchronously; marking it loaded here keeps a toggle
     // made in that first moment from being overwritten by the load that
     // lands after it.
     root.settingsLoaded = true
-    settingsFile.setText(JSON.stringify({ version: 1, alerts: enabled }, null, 2) + "\n")
+    settingsFile.setText(JSON.stringify({
+      version: 2,
+      alerts: root.alertsEnabled,
+      sound: root.soundEnabled
+    }, null, 2) + "\n")
   }
 
-  // The shell's notification service never auto-dismisses urgency=critical
-  // toasts and floors normal ones at 8s; only urgency=low honours a shorter
-  // expiry, with a 5s floor. So `-u low -t 5000` is exactly the 5-second
-  // toast we want — anything louder sticks until it's clicked away.
+  // Normal urgency: the shell floors it at 8s and gives it the regular
+  // accent. Low urgency would allow a 5s toast, but it also renders in the
+  // dim "unimportant" tier — too easy to miss, which is the whole point of
+  // the alert. Critical is the other extreme: it never auto-dismisses.
   function notifyPrayer(prayer) {
     if (!prayer) return
     notifyProc.running = false
-    notifyProc.command = ["notify-send", "-a", "Prayer times", "-u", "low", "-t", "5000",
+    notifyProc.command = ["notify-send", "-a", "Prayer times", "-u", "normal",
       prayer.name, "It's time for " + prayer.name + " · " + Model.formatTime12(prayer.time)]
     notifyProc.running = true
+    if (root.soundEnabled) {
+      soundProc.running = false
+      soundProc.command = ["paplay", root.soundPath]
+      soundProc.running = true
+    }
   }
 
   function checkPrayerArrived() {
@@ -205,6 +217,7 @@ BarWidget {
   }
 
   Process { id: notifyProc }
+  Process { id: soundProc }
 
   // Polls for a prayer whose time just landed. The window is wider than the
   // interval so a missed tick (suspend, clock jump) still alerts; the
@@ -492,12 +505,32 @@ BarWidget {
         Toggle {
           width: parent.width
           label: "Alerts"
-          description: root.alertsEnabled ? "5s toast" : "Off"
+          description: root.alertsEnabled ? "Toast at prayer time" : "Off"
           checked: root.alertsEnabled
           foreground: root.bar.foreground
           fontFamily: root.bar.fontFamily
           titleSize: Style.font.bodySmall
-          onClicked: root.setAlertsEnabled(!root.alertsEnabled)
+          onClicked: {
+            root.alertsEnabled = !root.alertsEnabled
+            root.saveSettings()
+          }
+        }
+
+        // Hidden when alerts are off: the sound only ever plays alongside a
+        // toast, so on its own the switch would control nothing.
+        Toggle {
+          visible: root.alertsEnabled
+          width: parent.width
+          label: "Sound"
+          description: root.soundEnabled ? "Chime with the toast" : "Silent"
+          checked: root.soundEnabled
+          foreground: root.bar.foreground
+          fontFamily: root.bar.fontFamily
+          titleSize: Style.font.bodySmall
+          onClicked: {
+            root.soundEnabled = !root.soundEnabled
+            root.saveSettings()
+          }
         }
 
         Text {

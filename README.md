@@ -64,11 +64,12 @@ until it restarts.
   enabled/accurate (e.g. behind a VPN) — just click the city name and type
   the correct one.
 - When a prayer time arrives, the widget fires a desktop notification
-  ("It's time for Asr") that dismisses itself after 5 seconds. It polls every
-  10 seconds and notifies each prayer at most once per day, and it won't
-  replay a prayer that already passed before the shell started. The **Alerts**
-  toggle at the bottom of the popup turns them off; the preference is stored
-  in `~/.local/state/omarchy/settings/prayer-alerts.json` (separate from the
+  ("It's time for Asr") plus a chime, and the toast dismisses itself after 8
+  seconds. It polls every 10 seconds and notifies each prayer at most once per
+  day, and it won't replay a prayer that already passed before the shell
+  started. The **Alerts** and **Sound** toggles at the bottom of the popup
+  turn them off; both are stored in
+  `~/.local/state/omarchy/settings/prayer-alerts.json` (separate from the
   cached times, which `prayer-fetch.sh` rewrites wholesale).
 
 ## Configuration
@@ -78,13 +79,17 @@ Change it by editing `METHOD` in `prayer-fetch.sh`, or override per-run with
 `PRAYER_METHOD=<id>`. See the
 [Aladhan docs](https://aladhan.com/calculation-methods) for method IDs.
 
-The arrival notification is sent as `notify-send -u low -t 5000` on purpose.
-The Omarchy shell's notification service never auto-dismisses `critical`
-toasts and floors `normal` ones at 8 seconds; only `low` urgency honours a
-shorter expiry, with a 5-second floor. Change the `-t` value in
-`notifyPrayer()` in `BarWidget.qml` to make it longer (up to 30s, the shell's
-cap). To turn alerts off, use the toggle in the popup rather than editing
-the code.
+The arrival toast is sent at `normal` urgency, which the Omarchy shell shows
+for 8 seconds in its regular accent. The other tiers are worse fits: `critical`
+never auto-dismisses (it sits there until clicked), and `low` allows a shorter
+5-second toast but renders in the dim "unimportant" styling, which is easy to
+miss entirely. Pass `-t <ms>` in `notifyPrayer()` in `BarWidget.qml` to stretch
+it up to 30s, the shell's cap.
+
+The chime is `paplay` on `/usr/share/sounds/freedesktop/stereo/bell.oga`.
+Point `soundPath` at any other file to change it — `ls
+/usr/share/sounds/freedesktop/stereo/` for what ships with freedesktop's
+sound theme.
 
 ## License
 
