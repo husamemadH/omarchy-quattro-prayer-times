@@ -19,13 +19,7 @@ only in the bar, no inline text.
 
 ```
 omarchy plugin add https://github.com/husamemadH/omarchy-quattro-prayer-times.git --enable
-omarchy bar plugin add local.prayer-times --section right --index 0
 ```
-
-`--index 0` puts the icon at the left edge of the right section. Without it the
-widget is placed after the section's anchor (`omarchy.tray`), and if you don't
-run a tray widget it lands at the far end of the bar instead. Move it later with
-`omarchy bar plugin move local.prayer-times --section right --index <n>`.
 
 ## Uninstall
 
