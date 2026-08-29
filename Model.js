@@ -57,23 +57,34 @@ function prayerKey(prayer) {
   return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate() + " " + prayer.name
 }
 
-// Widget preference file -> { alerts, sound, countdown }. Anything missing or
-// corrupt reads as its default, so a first run (or a file we can't parse) still
-// alerts. Older files carry fewer keys -- v1 has no `sound`, v2 no `countdown`
-// -- and each falls through.
+// Widget preference file -> { alerts, sound, countdown, hanafiAsr }. Anything
+// missing or corrupt reads as its default, so a first run (or a file we can't
+// parse) still alerts. Older files carry fewer keys -- v1 has no `sound`, v2 no
+// `countdown`, v3 no `hanafiAsr` -- and each falls through to its default.
 //
 // countdown defaults to false: the widget is built to sit among the wifi/sound
 // icons, so the bar label is something the user asks for rather than something
 // an upgrade springs on them.
+//
+// hanafiAsr defaults to false (Standard) because that is what Aladhan returns
+// when the caller says nothing, so an existing cache stays consistent with the
+// preference until the user says otherwise.
 function parseSettings(raw) {
-  var out = { alerts: true, sound: true, countdown: false }
+  var out = { alerts: true, sound: true, countdown: false, hanafiAsr: false }
   try {
     var data = JSON.parse(String(raw || "{}"))
     if (data && typeof data.alerts === "boolean") out.alerts = data.alerts
     if (data && typeof data.sound === "boolean") out.sound = data.sound
     if (data && typeof data.countdown === "boolean") out.countdown = data.countdown
+    if (data && typeof data.hanafiAsr === "boolean") out.hanafiAsr = data.hanafiAsr
   } catch (e) {}
   return out
+}
+
+// The argument prayer-fetch.sh expects for a madhhab. Kept here so the widget
+// and the tests agree on the spelling the script parses.
+function asrArg(hanafiAsr) {
+  return hanafiAsr ? "hanafi" : "standard"
 }
 
 // "HH:MM" (24h, as returned by the API) -> "h:MM AM/PM" for display.
@@ -162,6 +173,7 @@ if (typeof module !== "undefined") {
     duePrayer: duePrayer,
     prayerKey: prayerKey,
     parseSettings: parseSettings,
+    asrArg: asrArg,
     formatTime12: formatTime12,
     timeRemaining: timeRemaining,
     minutesRemaining: minutesRemaining,

@@ -62,9 +62,10 @@ until it restarts.
   seconds. It polls every 10 seconds and notifies each prayer at most once per
   day, and it won't replay a prayer that already passed before the shell
   started. The **Alerts** and **Sound** toggles at the bottom of the popup
-  turn them off; both are stored in
-  `~/.local/state/omarchy/settings/prayer-alerts.json` (separate from the
-  cached times, which `prayer-fetch.sh` rewrites wholesale).
+  turn them off, and **Hanafi Asr** picks the madhhab (below). They are stored
+  in `~/.local/state/omarchy/settings/prayer-alerts.json` with the other
+  preferences (separate from the cached times, which `prayer-fetch.sh` rewrites
+  wholesale).
 
 ## Configuration
 
@@ -79,6 +80,29 @@ bar** toggle at the bottom of the popup paints it next to the icon
 It takes the bar's urgent colour with 10 minutes or less to go — the same
 accent the popup gives the next prayer — and it is left out on a vertical bar,
 where there is no room for it; the tooltip still has it there.
+
+### Asr and the madhhab
+
+The **Hanafi Asr** toggle in the popup switches how Asr is calculated. The
+standard opinion (Shafi'i, Maliki, Hanbali) starts Asr once an object's shadow
+equals its own length; the Hanafi one waits for twice that, which puts Asr
+roughly an hour later. Nothing else in the timetable moves.
+
+The times are recomputed by the API rather than shifted locally, so flipping
+the toggle re-fetches — it needs a network round trip, and the popup says so in
+red if that fetch failed and the listed Asr is still the other school's.
+Right/middle-click the icon to retry.
+
+The preference lives in `prayer-alerts.json` as `"hanafiAsr": true|false`.
+`prayer-fetch.sh` reads it on a bare run, but the widget also passes the
+madhhab as the first argument (`hanafi` / `standard`) so a fetch fired the
+instant the toggle flips can't race the settings write. `PRAYER_SCHOOL=0|1`
+overrides the file for a one-off run, matching Aladhan's `school` parameter.
+
+```
+./prayer-fetch.sh hanafi     # force Hanafi, ignore the saved preference
+./prayer-fetch.sh            # use the saved preference (default: standard)
+```
 
 ### Calculation method
 
