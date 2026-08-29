@@ -57,6 +57,11 @@ until it restarts.
   weather widget's location too. Useful if IP-based geolocation isn't
   enabled/accurate (e.g. behind a VPN) — just click the city name and type
   the correct one.
+- The popup marks the next prayer in red and, under the prayer whose time you
+  are currently in, shows how much of that window is left ("Ends in 2h 17m").
+  Fajr closes at sunrise rather than at Dhuhr, so between the two there is no
+  line — no prayer is open then — and Isha runs past midnight to the next
+  day's Fajr.
 - When a prayer time arrives, the widget fires a desktop notification
   ("It's time for Asr") plus a chime, and the toast dismisses itself after 8
   seconds. It polls every 10 seconds and notifies each prayer at most once per

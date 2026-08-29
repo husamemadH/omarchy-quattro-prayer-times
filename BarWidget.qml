@@ -60,6 +60,12 @@ BarWidget {
   property string geocodeActiveQuery: ""
 
   readonly property var nextPrayer: Model.nextPrayer(timings, nowTick)
+
+  // The window you are inside now, which is not simply "the one before next":
+  // after sunrise Fajr has closed while Dhuhr is still hours off, and nothing
+  // is open. Null in that gap, and the popup then shows no line at all.
+  readonly property var openWindow: Model.currentPrayer(timings, nowTick)
+  readonly property string openWindowRemaining: openWindow ? Model.timeRemaining(openWindow, nowTick) : ""
   // True when the times on screen were fetched under the other madhhab.
   readonly property bool asrOutOfDate: root.timings !== null && root.cachedSchool !== ""
     && root.cachedSchool !== (root.hanafiAsr ? "HANAFI" : "STANDARD")
@@ -585,28 +591,47 @@ BarWidget {
 
         Repeater {
           model: root.timings ? Model.PRAYER_ORDER : []
-          delegate: Row {
+          delegate: Column {
+            id: prayerRow
             required property string modelData
 
             readonly property bool isNext: root.nextPrayer && root.nextPrayer.name === modelData
+            // The row that carries the "ends in" line is the prayer you are
+            // inside, not the one coming up: how long is left to pray this one
+            // is the question the list cannot otherwise answer, and the
+            // countdown to the next is what the bar label already shows.
+            readonly property bool isOpen: root.openWindow && root.openWindow.name === modelData
 
             width: col.width
-            spacing: Style.space(8)
+            spacing: Style.space(2)
+
+            Row {
+              width: parent.width
+              spacing: Style.space(8)
+
+              Text {
+                width: Style.space(72)
+                text: prayerRow.modelData
+                color: prayerRow.isNext ? root.bar.urgent : root.bar.foreground
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.bodySmall
+                font.bold: prayerRow.isNext
+              }
+              Text {
+                text: root.timings[prayerRow.modelData] ? Model.formatTime12(root.timings[prayerRow.modelData]) : ""
+                color: prayerRow.isNext ? root.bar.urgent : Qt.darker(root.bar.foreground, 1.2)
+                font.family: root.bar.fontFamily
+                font.pixelSize: Style.font.bodySmall
+                font.bold: prayerRow.isNext
+              }
+            }
 
             Text {
-              width: Style.space(72)
-              text: modelData
-              color: isNext ? root.bar.urgent : root.bar.foreground
+              visible: prayerRow.isOpen && root.openWindowRemaining !== ""
+              text: "Ends in " + root.openWindowRemaining
+              color: Qt.darker(root.bar.foreground, 1.5)
               font.family: root.bar.fontFamily
-              font.pixelSize: Style.font.bodySmall
-              font.bold: isNext
-            }
-            Text {
-              text: root.timings[modelData] ? Model.formatTime12(root.timings[modelData]) : ""
-              color: isNext ? root.bar.urgent : Qt.darker(root.bar.foreground, 1.2)
-              font.family: root.bar.fontFamily
-              font.pixelSize: Style.font.bodySmall
-              font.bold: isNext
+              font.pixelSize: Style.font.caption
             }
           }
         }

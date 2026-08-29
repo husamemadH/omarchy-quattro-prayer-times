@@ -3,6 +3,18 @@
 var PRAYER_ORDER = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"]
 var PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 
+// What closes each prayer's window. Every one runs until the next prayer
+// begins except Fajr, which ends at sunrise -- the stretch between sunrise and
+// Dhuhr belongs to no prayer, so nothing is counting down through it. Isha runs
+// past midnight into the next day's Fajr.
+var WINDOW_END = {
+  Fajr: "Sunrise",
+  Dhuhr: "Asr",
+  Asr: "Maghrib",
+  Maghrib: "Isha",
+  Isha: "Fajr"
+}
+
 function parseCache(raw) {
   try {
     var data = JSON.parse(String(raw || "{}"))
@@ -33,6 +45,43 @@ function nextPrayer(timings, now) {
   var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
   var fajr = timeToDate(timings["Fajr"], tomorrow)
   return fajr ? { name: "Fajr", time: timings["Fajr"], date: fajr } : null
+}
+
+// The prayer whose window `now` falls inside, with `date` set to the moment
+// that window closes -- so timeRemaining() reads it the same way it reads
+// nextPrayer. Null whenever no window is open: between sunrise and Dhuhr,
+// which belongs to no prayer, and before any timings have loaded.
+//
+// Walks backwards to the most recently started prayer, then before Fajr falls
+// through to Isha, which has been running since the previous evening.
+function currentPrayer(timings, now) {
+  if (!timings) return null
+
+  for (var i = PRAYERS.length - 1; i >= 0; i--) {
+    var name = PRAYERS[i]
+    var start = timeToDate(timings[name], now)
+    if (!start || start.getTime() > now.getTime()) continue
+
+    var endName = WINDOW_END[name]
+    var end
+    if (name === "Isha") {
+      var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+      end = timeToDate(timings[endName], tomorrow)
+    } else {
+      end = timeToDate(timings[endName], now)
+    }
+    // Fajr's window shuts at sunrise while Dhuhr is still hours off; nothing
+    // is open in between.
+    if (!end || end.getTime() <= now.getTime()) return null
+    return { name: name, time: timings[name], date: end, endsAt: timings[endName] }
+  }
+
+  // Earlier than this morning's Fajr: last night's Isha is still open.
+  var fajr = timeToDate(timings["Fajr"], now)
+  if (fajr && timings["Isha"] && fajr.getTime() > now.getTime())
+    return { name: "Isha", time: timings["Isha"], date: fajr, endsAt: timings["Fajr"] }
+
+  return null
 }
 
 // The prayer whose time has just arrived: within `windowMs` before `now`.
@@ -167,9 +216,11 @@ if (typeof module !== "undefined") {
   module.exports = {
     PRAYER_ORDER: PRAYER_ORDER,
     PRAYERS: PRAYERS,
+    WINDOW_END: WINDOW_END,
     parseCache: parseCache,
     timeToDate: timeToDate,
     nextPrayer: nextPrayer,
+    currentPrayer: currentPrayer,
     duePrayer: duePrayer,
     prayerKey: prayerKey,
     parseSettings: parseSettings,
