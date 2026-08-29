@@ -50,6 +50,36 @@ BarWidget {
     ? (location ? location + " · " : "") + nextPrayer.name + " in " + Model.timeRemaining(nextPrayer, nowTick) + " (" + Model.formatTime12(nextPrayer.time) + ")"
     : "Prayer times"
 
+  // Countdown beside the icon. Off by default: this widget is built to sit
+  // among the wifi/sound icons, and a label changes how much of the bar it
+  // claims, so that is the user's call rather than ours. Flipped by the
+  // toggle at the bottom of the popup, stored with the alert preferences.
+  property bool showCountdown: false
+
+  // The same countdown the tooltip spells out, trimmed to what fits in a bar
+  // slot ("Asr 1h 4m"). Empty until the first fetch lands, so the icon stands
+  // alone rather than the bar holding width for a placeholder.
+  readonly property string countdownText: Model.countdownLabel(nextPrayer, nowTick)
+
+  // A vertical bar has no room for a label, so there the countdown stays in
+  // the tooltip whatever the setting says.
+  readonly property bool countdownVisible: showCountdown && !vertical && countdownText !== ""
+
+  // Minutes left at which the label takes the urgent accent -- the same colour
+  // the popup already gives the next prayer, so the bar and the list agree on
+  // what is imminent.
+  readonly property int urgentMinutes: 10
+  readonly property bool countdownUrgent: {
+    var left = Model.minutesRemaining(nextPrayer, nowTick)
+    return left >= 0 && left <= urgentMinutes
+  }
+
+  // With the label on, this module is a text row in a padded slot, so the
+  // open-panel mark tracks what it paints instead of a fraction of the slot it
+  // fills -- the same hint the built-in clock gives. Icon-only, the bar's
+  // default mark is already right.
+  readonly property real openPanelIndicatorWidth: countdownVisible ? content.implicitWidth : 0
+
   function refresh() {
     if (!fetchProc.running) fetchProc.running = true
   }
@@ -130,6 +160,7 @@ BarWidget {
     var settings = Model.parseSettings(raw)
     root.alertsEnabled = settings.alerts
     root.soundEnabled = settings.sound
+    root.showCountdown = settings.countdown
     root.settingsLoaded = true
   }
 
@@ -139,9 +170,10 @@ BarWidget {
     // lands after it.
     root.settingsLoaded = true
     settingsFile.setText(JSON.stringify({
-      version: 2,
+      version: 3,
       alerts: root.alertsEnabled,
-      sound: root.soundEnabled
+      sound: root.soundEnabled,
+      countdown: root.showCountdown
     }, null, 2) + "\n")
   }
 
@@ -285,15 +317,62 @@ BarWidget {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
-  BarIconButton {
+  // Icon, plus the countdown when it is switched on. Laid out the way the
+  // built-in media widget does it: a Row paints the content inside a
+  // WidgetButton whose own label is off, so the button still supplies the
+  // bar's tooltip, click registration and hover handling while the width
+  // follows the text. With the label hidden the slot is the same icon slot
+  // BarIconButton was giving.
+  WidgetButton {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.iconGlyph
+    labelVisible: false
+    hasVisualContent: true
     tooltipText: root.tooltipLabel
+    fixedWidth: root.vertical
+      ? -1
+      : (root.countdownVisible ? content.implicitWidth + button.scaledHorizontalMargin * 2 : Style.bar.iconSlot)
+    fixedHeight: root.vertical ? Style.bar.iconSlot : -1
+
     onPressed: function(b) {
       if (b === Qt.RightButton || b === Qt.MiddleButton) root.refresh()
       else root.popupOpen = !root.popupOpen
+    }
+
+    Row {
+      id: content
+      anchors.centerIn: parent
+      spacing: Style.space(6)
+
+      // OpticalGlyph rather than a bare Text: it puts the mosque on the same
+      // optical centre as every other icon in the bar.
+      OpticalGlyph {
+        anchors.verticalCenter: parent.verticalCenter
+        width: Style.bar.iconCanvas
+        height: Style.bar.iconCanvas
+        text: root.iconGlyph
+        fontFamily: button.fontFamily
+        fontSize: Style.bar.iconFont
+        color: button.foreground
+      }
+
+      // Hidden rather than blank: Row leaves invisible children out, so the
+      // button shrinks back to the icon slot.
+      Text {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.countdownVisible
+        text: root.countdownText
+        color: root.countdownUrgent ? button.activeColor : button.foreground
+        font.family: button.fontFamily
+        font.pixelSize: Style.font.body
+        renderType: Text.NativeRendering
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: 160 }
+        }
+      }
     }
   }
 
@@ -529,6 +608,24 @@ BarWidget {
           titleSize: Style.font.bodySmall
           onClicked: {
             root.soundEnabled = !root.soundEnabled
+            root.saveSettings()
+          }
+        }
+
+        // Last of the switches: the only one that changes nothing but how the
+        // bar looks. Hidden on a vertical bar, where there is no room for the
+        // label and the toggle would control nothing.
+        Toggle {
+          visible: !root.vertical
+          width: parent.width
+          label: "Countdown in bar"
+          description: root.showCountdown ? "Next prayer and time left beside the icon" : "Icon only"
+          checked: root.showCountdown
+          foreground: root.bar.foreground
+          fontFamily: root.bar.fontFamily
+          titleSize: Style.font.bodySmall
+          onClicked: {
+            root.showCountdown = !root.showCountdown
             root.saveSettings()
           }
         }
