@@ -28,9 +28,6 @@ PS run 'omarchy restart shell' if you reinstalled to get the latest update
 omarchy plugin remove local.prayer-times
 ```
 
-Take the widget out of the bar layout first — `omarchy plugin remove` disables
-and deletes the plugin, but leaves its entry in the layout behind.
-
 ## How it works
 
 - `prayer-fetch.sh` resolves your location the same way the built-in weather
