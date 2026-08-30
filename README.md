@@ -25,7 +25,6 @@ PS run 'omarchy restart shell' if you reinstalled to get the latest update
 ## Uninstall
 
 ```
-omarchy bar plugin remove local.prayer-times
 omarchy plugin remove local.prayer-times
 ```
 
