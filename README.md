@@ -20,6 +20,7 @@ only in the bar, no inline text.
 ```
 omarchy plugin add https://github.com/husamemadH/omarchy-quattro-prayer-times.git --enable
 ```
+PS run 'omarchy restart shell' if you reinstalled to get the latest update 
 
 ## Uninstall
 
@@ -30,15 +31,6 @@ omarchy plugin remove local.prayer-times
 
 Take the widget out of the bar layout first — `omarchy plugin remove` disables
 and deletes the plugin, but leaves its entry in the layout behind.
-
-The cached times in `~/.local/state/omarchy/settings/prayer-times.json` are left
-on disk; delete it if you want them gone. Leave `weather.json` alone — that one
-belongs to the built-in weather widget.
-
-**Reinstalling to get an update?** Run `omarchy restart shell` afterwards.
-`rescanPlugins` only refreshes the plugin registry, not an already-loaded
-widget's code, so a long-lived shell session keeps running the old version
-until it restarts.
 
 ## How it works
 
