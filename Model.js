@@ -112,7 +112,10 @@ function minutesRemaining(next, now) {
 
 function countdownLabel(next, now) {
   if (!next) return ""
-  return next.name + " " + timeRemaining(next, now)
+  var left = timeRemaining(next, now)
+  // timeRemaining says "now" once the prayer lands, and "Dhuhr in now" reads
+  // wrong -- so that one case drops the preposition.
+  return left === "now" ? next.name + " now" : next.name + " in " + left
 }
 
 // Open-Meteo geocoding response -> suggestion rows for the location search.
