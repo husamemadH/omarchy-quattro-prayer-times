@@ -68,6 +68,20 @@ until it restarts.
 
 ## Configuration
 
+### Countdown in the bar
+
+Off by default — the icon is meant to sit among the built-in wifi/sound icons,
+and a label changes how much of the bar the widget claims. The **Countdown in
+bar** toggle at the bottom of the popup paints it next to the icon
+(`󰚁 Asr 1h 4m`) instead of only on hover, and is stored in
+`prayer-alerts.json` with the other preferences.
+
+It takes the bar's urgent colour with 10 minutes or less to go — the same
+accent the popup gives the next prayer — and it is left out on a vertical bar,
+where there is no room for it; the tooltip still has it there.
+
+### Calculation method
+
 Calculation method defaults to Muslim World League (Aladhan method `3`).
 Change it by editing `METHOD` in `prayer-fetch.sh`, or override per-run with
 `PRAYER_METHOD=<id>`. See the

@@ -57,15 +57,21 @@ function prayerKey(prayer) {
   return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate() + " " + prayer.name
 }
 
-// Alerts preference file -> { alerts, sound }. Anything missing or corrupt
-// reads as enabled, so a first run (or a file we can't parse) still alerts.
-// v1 files carry no `sound` key; they fall through to the default.
+// Widget preference file -> { alerts, sound, countdown }. Anything missing or
+// corrupt reads as its default, so a first run (or a file we can't parse) still
+// alerts. Older files carry fewer keys -- v1 has no `sound`, v2 no `countdown`
+// -- and each falls through.
+//
+// countdown defaults to false: the widget is built to sit among the wifi/sound
+// icons, so the bar label is something the user asks for rather than something
+// an upgrade springs on them.
 function parseSettings(raw) {
-  var out = { alerts: true, sound: true }
+  var out = { alerts: true, sound: true, countdown: false }
   try {
     var data = JSON.parse(String(raw || "{}"))
     if (data && typeof data.alerts === "boolean") out.alerts = data.alerts
     if (data && typeof data.sound === "boolean") out.sound = data.sound
+    if (data && typeof data.countdown === "boolean") out.countdown = data.countdown
   } catch (e) {}
   return out
 }
@@ -92,6 +98,16 @@ function timeRemaining(next, now) {
   var h = Math.floor(totalMin / 60)
   var m = totalMin % 60
   return h > 0 ? (h + "h " + m + "m") : (m + "m")
+}
+
+// Whole minutes until `next`, or -1 when there is nothing to count down to.
+// Rounded the same way as timeRemaining, so the bar label cannot read "10m"
+// while a threshold checked against this still believes there are 11 left.
+function minutesRemaining(next, now) {
+  if (!next || !next.date) return -1
+  var diffMs = next.date.getTime() - now.getTime()
+  if (diffMs <= 0) return 0
+  return Math.round(diffMs / 60000)
 }
 
 function countdownLabel(next, now) {
@@ -148,6 +164,7 @@ if (typeof module !== "undefined") {
     parseSettings: parseSettings,
     formatTime12: formatTime12,
     timeRemaining: timeRemaining,
+    minutesRemaining: minutesRemaining,
     countdownLabel: countdownLabel,
     parseGeocodingResults: parseGeocodingResults,
     locationCommit: locationCommit
