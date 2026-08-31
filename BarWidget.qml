@@ -618,8 +618,8 @@ BarWidget {
         Toggle {
           visible: !root.vertical
           width: parent.width
-          label: "Countdown in bar"
-          description: root.showCountdown ? "Next prayer and time left beside the icon" : "Icon only"
+          label: "Bar countdown"
+          description: root.showCountdown ? "Next prayer beside the icon" : "Icon only"
           checked: root.showCountdown
           foreground: root.bar.foreground
           fontFamily: root.bar.fontFamily
