@@ -16,6 +16,10 @@ BarWidget {
   property var timings: null
   property string location: ""
   property string hijri: ""
+  // Which madhhab the cached timings were actually fetched under, echoed back
+  // by the API. Compared against hanafiAsr so a refetch that failed (offline,
+  // API down) can't leave the popup quietly showing the other school's Asr.
+  property string cachedSchool: ""
   property string lastError: ""
   property bool popupOpen: false
   property date nowTick: new Date()
@@ -33,7 +37,17 @@ BarWidget {
   readonly property string soundPath: "/usr/share/sounds/freedesktop/stereo/bell.oga"
   property bool alertsEnabled: true
   property bool soundEnabled: true
+
+  // Asr per the Hanafi madhhab (shadow twice the object's length) instead of
+  // the standard one (shadow equal to it), which puts Asr roughly an hour
+  // later. The whole timetable is recomputed server-side, so flipping this
+  // has to re-fetch rather than shift the cached time locally.
+  property bool hanafiAsr: false
+
   property bool settingsLoaded: false
+  // A refresh asked for before the preference file had been read, or while a
+  // fetch was already in flight. Drained by markSettingsReady/fetchProc.
+  property bool refetchQueued: false
 
   // Click-to-edit location, same mechanism as the weather widget: persists
   // to the shared weather.json via omarchy-weather-location, so editing the
@@ -46,6 +60,10 @@ BarWidget {
   property string geocodeActiveQuery: ""
 
   readonly property var nextPrayer: Model.nextPrayer(timings, nowTick)
+  // True when the times on screen were fetched under the other madhhab.
+  readonly property bool asrOutOfDate: root.timings !== null && root.cachedSchool !== ""
+    && root.cachedSchool !== (root.hanafiAsr ? "HANAFI" : "STANDARD")
+
   readonly property string tooltipLabel: nextPrayer
     ? (location ? location + " · " : "") + nextPrayer.name + " in " + Model.timeRemaining(nextPrayer, nowTick) + " (" + Model.formatTime12(nextPrayer.time) + ")"
     : "Prayer times"
@@ -80,8 +98,21 @@ BarWidget {
   // default mark is already right.
   readonly property real openPanelIndicatorWidth: countdownVisible ? content.implicitWidth : 0
 
+  // prayer-fetch.sh is told which Asr to ask for on the command line, so the
+  // first fetch has to wait for the preference file: firing before it is read
+  // would pull Standard times and visibly correct them a moment later.
   function refresh() {
-    if (!fetchProc.running) fetchProc.running = true
+    if (!root.settingsLoaded || fetchProc.running) {
+      root.refetchQueued = true
+      return
+    }
+    root.refetchQueued = false
+    fetchProc.running = true
+  }
+
+  function markSettingsReady() {
+    root.settingsLoaded = true
+    if (root.refetchQueued) Qt.callLater(root.refresh)
   }
 
   // Contract PopupCard expects on its `owner`: when the focus-grab dismisses
@@ -161,20 +192,22 @@ BarWidget {
     root.alertsEnabled = settings.alerts
     root.soundEnabled = settings.sound
     root.showCountdown = settings.countdown
-    root.settingsLoaded = true
+    root.hanafiAsr = settings.hanafiAsr
+    root.markSettingsReady()
   }
 
   function saveSettings() {
     // The file loads asynchronously; marking it loaded here keeps a toggle
     // made in that first moment from being overwritten by the load that
     // lands after it.
-    root.settingsLoaded = true
     settingsFile.setText(JSON.stringify({
-      version: 3,
+      version: 4,
       alerts: root.alertsEnabled,
       sound: root.soundEnabled,
-      countdown: root.showCountdown
+      countdown: root.showCountdown,
+      hanafiAsr: root.hanafiAsr
     }, null, 2) + "\n")
+    root.markSettingsReady()
   }
 
   // Normal urgency: the shell floors it at 8s and gives it the regular
@@ -213,6 +246,7 @@ BarWidget {
     root.timings = data.timings || null
     root.location = data.location || ""
     root.hijri = data.hijri || ""
+    root.cachedSchool = data.school || ""
     root.lastError = ""
   }
 
@@ -241,11 +275,14 @@ BarWidget {
 
   Process {
     id: fetchProc
-    command: ["bash", root.scriptPath]
+    command: ["bash", root.scriptPath, Model.asrArg(root.hanafiAsr)]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.applyData(Model.parseCache(text))
     }
+    // A toggle flipped mid-fetch would otherwise be dropped, leaving the
+    // popup on the school the in-flight run had already asked for.
+    onExited: if (root.refetchQueued) Qt.callLater(root.refresh)
   }
 
   Process { id: notifyProc }
@@ -574,11 +611,41 @@ BarWidget {
           }
         }
 
+        // Only after a re-fetch has failed: the times above are still the
+        // other madhhab's, and Asr is the one that differs.
+        Text {
+          visible: root.asrOutOfDate
+          text: "Still showing " + (root.cachedSchool === "HANAFI" ? "Hanafi" : "standard")
+            + " Asr — right-click the icon to retry"
+          color: root.bar.urgent
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.caption
+          wrapMode: Text.WordWrap
+          width: parent.width
+        }
+
         Rectangle {
           width: parent.width
           height: Style.spacing.hairline
           color: root.bar.foreground
           opacity: 0.12
+        }
+
+        // Above the alert switches because this one changes the times
+        // themselves, not just how they are announced.
+        Toggle {
+          width: parent.width
+          label: "Hanafi Asr"
+          description: root.hanafiAsr ? "Shadow twice the object" : "Standard — shadow equal to the object"
+          checked: root.hanafiAsr
+          foreground: root.bar.foreground
+          fontFamily: root.bar.fontFamily
+          titleSize: Style.font.bodySmall
+          onClicked: {
+            root.hanafiAsr = !root.hanafiAsr
+            root.saveSettings()
+            root.refresh()
+          }
         }
 
         Toggle {

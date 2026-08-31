@@ -9,9 +9,35 @@ set -uo pipefail
 STATE_DIR="$HOME/.local/state/omarchy/settings"
 WEATHER_LOC="$STATE_DIR/weather.json"
 CACHE_FILE="$STATE_DIR/prayer-times.json"
+SETTINGS_FILE="$STATE_DIR/prayer-alerts.json"
 METHOD="${PRAYER_METHOD:-3}" # 3 = Muslim World League
 
 mkdir -p "$STATE_DIR"
+
+# Which madhhab sets Asr. Aladhan calls it `school`: 0 = Standard (Shafi'i,
+# Maliki, Hanbali -- Asr once an object's shadow equals its own length), 1 =
+# Hanafi (twice its length, which puts Asr roughly an hour later). Everything
+# else in the timetable is identical between the two.
+#
+# The widget passes its toggle in as $1 so a fetch fired the instant the
+# toggle flips cannot race the settings-file write. A bare run -- cron, a
+# terminal, the right-click refresh -- has no argument and falls back to the
+# stored preference.
+case "${1:-}" in
+hanafi) SCHOOL=1 ;;
+standard) SCHOOL=0 ;;
+"") SCHOOL="${PRAYER_SCHOOL:-}" ;;
+*)
+  echo "prayer-fetch: unknown madhhab '$1' (want 'hanafi' or 'standard')" >&2
+  exit 2
+  ;;
+esac
+
+if [[ -z $SCHOOL && -f $SETTINGS_FILE ]]; then
+  SCHOOL=$(jq -r 'if .hanafiAsr == true then 1 else 0 end' "$SETTINGS_FILE" 2>/dev/null)
+fi
+
+[[ $SCHOOL == 1 ]] || SCHOOL=0
 
 name="" lat="" lon=""
 
@@ -42,7 +68,7 @@ fi
 response=$(curl -fsS --max-time 8 -G \
   --data-urlencode "latitude=$lat" \
   --data-urlencode "longitude=$lon" \
-  --data "method=$METHOD" \
+  --data "method=$METHOD&school=$SCHOOL" \
   "https://api.aladhan.com/v1/timings/$(date +%d-%m-%Y)" 2>/dev/null)
 
 if [[ -z $response ]]; then
@@ -55,6 +81,7 @@ parsed=$(jq --arg name "${name:-Current location}" '
     location: $name,
     date: .data.date.readable,
     hijri: (.data.date.hijri.day + " " + .data.date.hijri.month.en + " " + .data.date.hijri.year + "H"),
+    school: (.data.meta.school // ""),
     timings: {
       Fajr: (.data.timings.Fajr | split(" ")[0]),
       Sunrise: (.data.timings.Sunrise | split(" ")[0]),
