@@ -631,23 +631,6 @@ BarWidget {
           opacity: 0.12
         }
 
-        // Above the alert switches because this one changes the times
-        // themselves, not just how they are announced.
-        Toggle {
-          width: parent.width
-          label: "Hanafi Asr"
-          description: root.hanafiAsr ? "Shadow twice the object" : "Standard — shadow equal to the object"
-          checked: root.hanafiAsr
-          foreground: root.bar.foreground
-          fontFamily: root.bar.fontFamily
-          titleSize: Style.font.bodySmall
-          onClicked: {
-            root.hanafiAsr = !root.hanafiAsr
-            root.saveSettings()
-            root.refresh()
-          }
-        }
-
         Toggle {
           width: parent.width
           label: "Alerts"
@@ -694,6 +677,23 @@ BarWidget {
           onClicked: {
             root.showCountdown = !root.showCountdown
             root.saveSettings()
+          }
+        }
+
+        // Last because it is the one nobody touches twice: the madhhab is set
+        // once and then left alone, unlike the alert switches.
+        Toggle {
+          width: parent.width
+          label: "Hanafi Asr"
+          description: root.hanafiAsr ? "Shadow twice the object" : "Shadow equal to the object"
+          checked: root.hanafiAsr
+          foreground: root.bar.foreground
+          fontFamily: root.bar.fontFamily
+          titleSize: Style.font.bodySmall
+          onClicked: {
+            root.hanafiAsr = !root.hanafiAsr
+            root.saveSettings()
+            root.refresh()
           }
         }
 
