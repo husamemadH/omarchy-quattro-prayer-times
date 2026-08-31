@@ -16,10 +16,10 @@ PS run 'omarchy restart shell' if you reinstalled to get the latest update
 ```
 omarchy plugin remove local.prayer-times
 ```
-## Configuration
-
 <img width="210" height="544" alt="image" src="https://github.com/user-attachments/assets/6de88ef1-8ca2-4679-9abb-917b39dab199" />
 
+
+## Configuration
 
 Everything is set from the popup, left-click the mosque icon to open it.
 Preferences are stored in `~/.local/state/omarchy/settings/prayer-alerts.json`,
